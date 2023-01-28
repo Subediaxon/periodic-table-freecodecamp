@@ -2,63 +2,35 @@
 
 PSQL="psql -X --username=freecodecamp --dbname=periodic_table --no-align --tuples-only -c"
 
-if [[ -z $1 ]]
-then
-
-  echo -e "Please provide an element as an argument."
-
-else
-
-  if [[ $1 =~ [0-9]+ ]]
-  then
-      ELE_NAME=$($PSQL "SELECT name FROM elements where atomic_number = $1")
-      ELE_SYMBOL=$($PSQL "SELECT symbol FROM elements where atomic_number = $1")
-      ELE_TYPE_ID=$($PSQL "SELECT type_id FROM properties WHERE atomic_number = $1")
-      ELE_TYPE=$($PSQL "SELECT type FROM types where type_id=$ELE_TYPE_ID")
-      ELE_MASS=$($PSQL "SELECT atomic_mass from properties WHERE atomic_number = $1")
-      ELE_BOILING=$($PSQL "SELECT boiling_point_celsius FROM properties WHERE atomic_number = $1")
-      ELE_MELTING=$($PSQL "SELECT melting_point_celsius from properties WHERE atomic_number = $1") 
+# Function to get element details
+get_element_details() {
+  local atom_num=$1
+  local ele_name=$($PSQL "SELECT name FROM elements where atomic_number = $atom_num")
+  local ele_symbol=$($PSQL "SELECT symbol FROM elements where atomic_number = $atom_num")
+  local ele_type_id=$($PSQL "SELECT type_id FROM properties WHERE atomic_number = $atom_num")
+  local ele_type=$($PSQL "SELECT type FROM types where type_id=$ele_type_id")
+  local ele_mass=$($PSQL "SELECT atomic_mass from properties WHERE atomic_number = $atom_num")
+  local ele_boiling=$($PSQL "SELECT boiling_point_celsius FROM properties WHERE atomic_number = $atom_num")
+  local ele_melting=$($PSQL "SELECT melting_point_celsius from properties WHERE atomic_number = $atom_num")
   
-  echo "The element with atomic number 1 is $ELE_NAME ($ELE_SYMBOL). It's a $ELE_TYPE, with a mass of $ELE_MASS amu. $ELE_NAME has a melting point of $ELE_MELTING celsius and a boiling point of $ELE_BOILING celsius."
+  echo "The element with atomic number $atom_num is $ele_name ($ele_symbol). It's a $ele_type, with a mass of $ele_mass amu. $ele_name has a melting point of $ele_melting celsius and a boiling point of $ele_boiling celsius."
+}
 
-  elif [[ $1 =~ ^[A-Z][a-z]$ || (  (${#1} -eq 1) && ($1 =~ [[:upper:]] ) )  ]]
-  then
-    
-    #Elements Table
-    ATOM_NUM=$($PSQL "SELECT atomic_number FROM elements WHERE symbol = '$1'")
-    ELE_NAME=$($PSQL "SELECT name FROM elements where symbol = '$1'")
-    
-    #Properties Table
-    ELE_MASS=$($PSQL "SELECT atomic_mass from properties WHERE atomic_number = '$ATOM_NUM'")
-    ELE_BOILING=$($PSQL "SELECT boiling_point_celsius FROM properties WHERE atomic_number = '$ATOM_NUM'")
-    ELE_MELTING=$($PSQL "SELECT melting_point_celsius from properties WHERE atomic_number = '$ATOM_NUM'")
-    ELE_TYPE_ID=$($PSQL "SELECT type_id FROM properties WHERE atomic_number = '$ATOM_NUM'")
-    
-    #Types Table
-    ELE_TYPE=$($PSQL "SELECT type FROM types WHERE type_id = $ELE_TYPE_ID")
-        
-    echo "The element with atomic number $ATOM_NUM is $ELE_NAME ($1). It's a $ELE_TYPE, with a mass of $ELE_MASS amu. $ELE_NAME has a melting point of $ELE_MELTING celsius and a boiling point of $ELE_BOILING celsius."
-
-  elif [[ ${#1} -gt 3 && ${1:0:1} == [A-Z] ]]
-  then
-        
-    #Elements Table
-    ELE_SYMBOL=$($PSQL "SELECT symbol FROM elements where name = '$1'")
-    ATOM_NUM=$($PSQL "SELECT atomic_number FROM elements WHERE symbol = '$ELE_SYMBOL'")
-    
-    #Properties Table
-    ELE_MASS=$($PSQL "SELECT atomic_mass from properties WHERE atomic_number = '$ATOM_NUM'")
-    ELE_BOILING=$($PSQL "SELECT boiling_point_celsius FROM properties WHERE atomic_number = '$ATOM_NUM'")
-    ELE_MELTING=$($PSQL "SELECT melting_point_celsius from properties WHERE atomic_number = '$ATOM_NUM'")
-    ELE_TYPE_ID=$($PSQL "SELECT type_id FROM properties WHERE atomic_number = '$ATOM_NUM'")
-    
-    #Types Table
-    ELE_TYPE=$($PSQL "SELECT type FROM types WHERE type_id = $ELE_TYPE_ID")
-    
-    echo "The element with atomic number $ATOM_NUM is $1 ($ELE_SYMBOL). It's a $ELE_TYPE, with a mass of $ELE_MASS amu. $1 has a melting point of $ELE_MELTING celsius and a boiling point of $ELE_BOILING celsius."
-
+if [[ -z $1 ]]; then
+  echo "Please provide an element as an argument."
+else
+  if [[ $1 =~ [0-9]+ ]]; then
+    get_element_details $1
+  elif [[ $1 =~ ^[A-Z][a-z]$ || (  (${#1} -eq 1) && ($1 =~ [[:upper:]] ) )  ]]; then
+    local atom_num=$($PSQL "SELECT atomic_number FROM elements WHERE symbol = '$1'")
+    get_element_details $atom_num
+  elif [[ ${#1} -gt 3 && ${1:0:1} == [A-Z] ]]; then
+    local ele_symbol=$($PSQL "SELECT symbol FROM elements where name = '$1'")
+    local atom_num=$($PSQL "SELECT atomic_number FROM elements WHERE symbol = '$ele_symbol'")
+    get_element_details $atom_num
   else
     echo "I could not find that element in the database."
-  fi 
+  fi
 fi
+
 
